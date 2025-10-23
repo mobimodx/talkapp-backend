@@ -1,0 +1,1 @@
+{"version":3,"file":"tts.service.d.ts","sourceRoot":"","sources":["../../src/services/tts.service.ts"],"names":[],"mappings":"AAIA,OAAO,EAAE,UAAU,EAAE,WAAW,EAAqB,MAAM,UAAU,CAAC;AAEtE,cAAM,UAAU;IACd,OAAO,CAAC,MAAM,CAAS;IACvB,OAAO,CAAC,OAAO,CAAuC;;IAShD,YAAY,CAAC,OAAO,EAAE,UAAU,GAAG,OAAO,CAAC,WAAW,CAAC;IAyD7D,OAAO,CAAC,eAAe;IAuBvB,kBAAkB,IAAI,MAAM,EAAE;CAG/B;;AAED,wBAAgC"}
