@@ -33,6 +33,7 @@ class App {
         }
     }
     initializeMiddlewares() {
+        this.app.set('trust proxy', 1);
         this.app.use((0, helmet_1.default)());
         this.app.use((0, cors_1.default)({
             origin: config_1.default.cors.origin,
