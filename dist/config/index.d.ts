@@ -20,6 +20,7 @@ interface Config {
     };
     google: {
         apiKey: string;
+        projectId: string;
     };
     cors: {
         origin: string | string[];
