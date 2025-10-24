@@ -74,17 +74,20 @@ Detect the language, correct if needed, and translate to the other language natu
         try {
             const languageName = this.getLanguageName(request.language);
             const translationLanguageName = this.getLanguageName(request.translationLang);
-            const excludeList = request.excludeWords?.length
-                ? `\nExclude these words (already learned): ${request.excludeWords.join(', ')}`
+            const excludeWordsLower = request.excludeWords?.map(w => w.toLowerCase()) || [];
+            const excludeList = excludeWordsLower.length
+                ? `\n\nIMPORTANT: DO NOT include these words (already learned): ${excludeWordsLower.join(', ')}`
                 : '';
             const difficultyGuide = {
                 beginner: 'very basic, common everyday words (like: hello, water, cat, house)',
                 intermediate: 'commonly used words in daily conversations',
                 advanced: 'more sophisticated vocabulary',
             };
-            const systemPrompt = `You are a language teacher. Generate ${request.count} random words in ${languageName} for language learning.
+            const systemPrompt = `You are a language teacher. Generate ${request.count} NEW random words in ${languageName} for language learning.
 ${request.difficulty ? `Focus on ${difficultyGuide[request.difficulty]} level words.` : 'Mix beginner and intermediate level words.'}
 ${excludeList}
+
+CRITICAL: Generate ONLY words that are NOT in the exclude list above!
 
 Respond ONLY with a JSON array in this exact format:
 [
@@ -95,7 +98,7 @@ Respond ONLY with a JSON array in this exact format:
     "category": "category name (e.g., greetings, food, animals, etc.)"
   }
 ]`;
-            const userPrompt = `Generate ${request.count} unique, useful ${languageName} words for a learner. Make them practical and commonly used.`;
+            const userPrompt = `Generate ${request.count} unique, NEW ${languageName} words that are NOT in the exclude list. Make them practical and commonly used.`;
             const response = await axios_1.default.post(`${this.baseURL}/chat/completions`, {
                 model: this.model,
                 messages: [
@@ -114,10 +117,22 @@ Respond ONLY with a JSON array in this exact format:
             if (!content) {
                 throw new Error('No response from GPT');
             }
-            const words = JSON.parse(content);
+            let words = JSON.parse(content);
+            if (excludeWordsLower.length > 0) {
+                const beforeCount = words.length;
+                words = words.filter(w => !excludeWordsLower.includes(w.word.toLowerCase()));
+                if (beforeCount !== words.length) {
+                    logger_1.default.warn('GPT returned already learned words, filtered them out', {
+                        before: beforeCount,
+                        after: words.length,
+                        removed: beforeCount - words.length,
+                    });
+                }
+            }
             logger_1.default.debug('GPT Word Generation completed', {
                 language: request.language,
                 count: words.length,
+                excludedCount: excludeWordsLower.length,
             });
             return words;
         }
