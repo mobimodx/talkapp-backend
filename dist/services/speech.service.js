@@ -9,13 +9,26 @@ const errors_1 = require("../utils/errors");
 const logger_1 = __importDefault(require("../utils/logger"));
 class SpeechService {
     constructor() {
-        if (config_1.default.google.apiKey) {
+        if (config_1.default.google.credentials) {
+            try {
+                const credentials = JSON.parse(config_1.default.google.credentials);
+                this.client = new speech_1.v2.SpeechClient({ credentials });
+                logger_1.default.info('Speech-to-Text initialized with JSON credentials');
+            }
+            catch (error) {
+                logger_1.default.error('Failed to parse Google credentials JSON', error);
+                throw new Error('Invalid Google credentials JSON format');
+            }
+        }
+        else if (config_1.default.google.apiKey) {
             this.client = new speech_1.v2.SpeechClient({
                 apiKey: config_1.default.google.apiKey,
             });
+            logger_1.default.info('Speech-to-Text initialized with API Key');
         }
         else {
             this.client = new speech_1.v2.SpeechClient();
+            logger_1.default.info('Speech-to-Text initialized with default credentials');
         }
     }
     async speechToText(audioBase64, primaryLang, alternativeLang) {

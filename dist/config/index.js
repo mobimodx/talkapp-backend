@@ -29,6 +29,7 @@ const config = {
     google: {
         apiKey: process.env.GOOGLE_SPEECH_API_KEY || '',
         projectId: process.env.GOOGLE_PROJECT_ID || 'talkapp-project',
+        credentials: process.env.GOOGLE_CREDENTIALS_JSON,
     },
     cors: {
         origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : '*',

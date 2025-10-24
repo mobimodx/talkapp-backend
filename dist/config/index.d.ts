@@ -21,6 +21,7 @@ interface Config {
     google: {
         apiKey: string;
         projectId: string;
+        credentials?: string;
     };
     cors: {
         origin: string | string[];
