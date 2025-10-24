@@ -6,6 +6,7 @@ declare class SpeechService {
         text: string;
         detectedLang: string;
     }>;
+    private getLanguageCode;
 }
 declare const _default: SpeechService;
 export default _default;

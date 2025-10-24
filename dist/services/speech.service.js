@@ -10,12 +10,12 @@ const logger_1 = __importDefault(require("../utils/logger"));
 class SpeechService {
     constructor() {
         if (config_1.default.google.apiKey) {
-            this.client = new speech_1.SpeechClient({
+            this.client = new speech_1.v2.SpeechClient({
                 apiKey: config_1.default.google.apiKey,
             });
         }
         else {
-            this.client = new speech_1.SpeechClient();
+            this.client = new speech_1.v2.SpeechClient();
         }
     }
     async speechToText(audioBase64, primaryLang, alternativeLang) {
@@ -25,16 +25,25 @@ class SpeechService {
                 alternativeLanguage: alternativeLang || 'none',
                 audioSize: audioBase64.length,
             });
+            const languageCodes = [];
+            if (primaryLang)
+                languageCodes.push(this.getLanguageCode(primaryLang));
+            if (alternativeLang)
+                languageCodes.push(this.getLanguageCode(alternativeLang));
+            if (languageCodes.length === 0)
+                languageCodes.push('auto');
             const request = {
                 config: {
-                    languageCode: 'auto',
-                    model: 'latest_long',
-                    enableAutomaticPunctuation: true,
-                    useEnhanced: true,
+                    autoDecodingConfig: {},
+                    languageCodes: languageCodes,
+                    model: 'chirp',
+                    features: {
+                        enableAutomaticPunctuation: true,
+                        enableWordTimeOffsets: false,
+                        enableWordConfidence: true,
+                    },
                 },
-                audio: {
-                    content: audioBase64,
-                },
+                content: audioBase64,
             };
             const [response] = await this.client.recognize(request);
             if (!response.results || response.results.length === 0) {
@@ -43,7 +52,7 @@ class SpeechService {
             const result = response.results[0];
             const alternative = result.alternatives?.[0];
             const transcription = alternative?.transcript || '';
-            const detectedLanguageCode = result.languageCode || 'en-US';
+            const detectedLanguageCode = result.languageCode || primaryLang ? this.getLanguageCode(primaryLang) : 'en-US';
             if (!transcription) {
                 throw new Error('Empty transcription');
             }
@@ -59,8 +68,42 @@ class SpeechService {
         }
         catch (error) {
             logger_1.default.error('Speech-to-Text V2 failed', error);
-            throw new errors_1.ExternalServiceError(`Google Speech API error: ${error.message || 'Failed to transcribe'}`, error.code || 502);
+            let httpStatusCode = 502;
+            if (error.code) {
+                const grpcToHttp = {
+                    1: 499,
+                    2: 500,
+                    3: 400,
+                    4: 504,
+                    5: 404,
+                    7: 403,
+                    8: 429,
+                    9: 400,
+                    13: 500,
+                    14: 503,
+                    16: 401,
+                };
+                httpStatusCode = grpcToHttp[error.code] || 502;
+            }
+            throw new errors_1.ExternalServiceError(`Google Speech API error: ${error.message || 'Failed to transcribe'}`, httpStatusCode);
         }
+    }
+    getLanguageCode(language) {
+        const languageMap = {
+            en: 'en-US',
+            tr: 'tr-TR',
+            es: 'es-ES',
+            fr: 'fr-FR',
+            de: 'de-DE',
+            it: 'it-IT',
+            pt: 'pt-PT',
+            ru: 'ru-RU',
+            ar: 'ar-SA',
+            ja: 'ja-JP',
+            ko: 'ko-KR',
+            zh: 'zh-CN',
+        };
+        return languageMap[language] || 'en-US';
     }
 }
 exports.default = new SpeechService();
