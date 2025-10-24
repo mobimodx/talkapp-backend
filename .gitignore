@@ -1,0 +1,14 @@
+# Everything is ignored except dist/, package.json, package-lock.json
+*
+
+# Allow these files/folders
+!dist/
+!dist/**/*
+!package.json
+!package-lock.json
+!.gitignore
+
+# But still ignore these even if inside dist/
+.env
+.env.*
+node_modules/

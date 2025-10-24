@@ -26,6 +26,9 @@ const config = {
     openai: {
         apiKey: process.env.OPENAI_API_KEY || '',
     },
+    google: {
+        apiKey: process.env.GOOGLE_SPEECH_API_KEY || '',
+    },
     cors: {
         origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : '*',
     },

@@ -16,20 +16,26 @@ class GPTService {
     async translateAndCorrect(request) {
         try {
             const languageNames = this.getLanguageNames(request.sourceLang, request.targetLang);
-            const systemPrompt = `You are a professional translator and language corrector. Your task is to:
-1. First, correct any errors in the source text (grammar, spelling, sentence structure from speech recognition)
-2. Then translate it naturally to the target language in a conversational, natural way
+            const systemPrompt = `You are a professional translator and language corrector for a real-time conversation translator app.
+
+CONTEXT: Two people speaking different languages - ${languageNames.source} and ${languageNames.target}.
+
+YOUR TASK:
+1. Detect which language the text is in (either ${languageNames.source} or ${languageNames.target})
+2. Correct any errors in the text (grammar, spelling, sentence structure from speech recognition)
+3. Translate it naturally to the OTHER language in a conversational way
+
+IMPORTANT: If text is in ${languageNames.source}, translate to ${languageNames.target}. If text is in ${languageNames.target}, translate to ${languageNames.source}.
 
 Respond ONLY with a JSON object in this exact format:
 {
-  "correctedText": "the corrected version of the original text",
-  "translatedText": "the natural translation"
+  "correctedText": "the corrected version in original language",
+  "translatedText": "the natural translation in the other language"
 }`;
-            const userPrompt = `Source Language: ${languageNames.source}
-Target Language: ${languageNames.target}
-Text to correct and translate: "${request.text}"
+            const userPrompt = `Languages: ${languageNames.source} ↔ ${languageNames.target}
+Text to process: "${request.text}"
 
-Correct the text if it has any errors (speech recognition often makes mistakes), then translate it naturally to ${languageNames.target} as if a native speaker is speaking.`;
+Detect the language, correct if needed, and translate to the other language naturally as if a native speaker is speaking.`;
             const response = await axios_1.default.post(`${this.baseURL}/chat/completions`, {
                 model: this.model,
                 messages: [

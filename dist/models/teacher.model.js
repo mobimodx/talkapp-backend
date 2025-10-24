@@ -29,11 +29,32 @@ class TeacherModel {
         }
     }
     async getSession(sessionId) {
-        const rows = await (0, connection_1.query)('SELECT * FROM teacher_sessions WHERE id = ?', [sessionId]);
+        const rows = await (0, connection_1.query)(`SELECT 
+        id,
+        user_id as userId,
+        language,
+        words_count as wordsCount,
+        completed_words as completedWords,
+        progress,
+        started_at as startedAt,
+        completed_at as completedAt
+       FROM teacher_sessions 
+       WHERE id = ?`, [sessionId]);
         return rows.length > 0 ? rows[0] : null;
     }
     async getSessionWords(sessionId) {
-        return await (0, connection_1.query)('SELECT * FROM teacher_session_words WHERE session_id = ? ORDER BY id', [sessionId]);
+        const rows = await (0, connection_1.query)(`SELECT 
+        id,
+        session_id as sessionId,
+        word_id as wordId,
+        word,
+        translation,
+        is_completed as isCompleted,
+        completed_at as completedAt
+       FROM teacher_session_words 
+       WHERE session_id = ? 
+       ORDER BY id`, [sessionId]);
+        return rows;
     }
     async completeSessionWord(sessionId, wordId) {
         await (0, connection_1.query)(`UPDATE teacher_session_words 
@@ -54,14 +75,14 @@ class TeacherModel {
     }
     async markWordAsLearned(userId, wordId, word, language) {
         try {
-            const result = await (0, connection_1.query)(`INSERT INTO learned_words (user_id, word_id, language, word, review_count)
-         VALUES (?, ?, ?, ?, 1)
+            const result = await (0, connection_1.query)(`INSERT INTO learned_words (user_id, word_id, language, word, review_count, last_reviewed_at)
+         VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
          ON DUPLICATE KEY UPDATE review_count = review_count + 1, last_reviewed_at = CURRENT_TIMESTAMP`, [userId, wordId, language, word]);
-            console.log('Word marked as learned:', { userId, wordId, word, result });
+            console.log(`✅ Word marked as learned: userId=${userId}, wordId=${wordId}, word="${word}", affectedRows=${result.affectedRows}`);
             await this.updateDailyProgress(userId);
         }
         catch (error) {
-            console.error('Error marking word as learned:', error);
+            console.error('❌ Error marking word as learned:', error);
             throw error;
         }
     }
@@ -73,7 +94,7 @@ class TeacherModel {
             const wordsLearned = result[0]?.count || 0;
             const totalWords = 10;
             const progressPercentage = Math.min((wordsLearned / totalWords) * 100, 100);
-            console.log('Updating daily progress:', { userId, today, wordsLearned, totalWords, progressPercentage });
+            console.log(`📊 Daily progress: userId=${userId}, today=${today}, wordsLearned=${wordsLearned}, progress=${progressPercentage}%`);
             await (0, connection_1.query)(`INSERT INTO daily_progress (user_id, date, words_learned, total_words, progress_percentage)
          VALUES (?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE 
@@ -81,13 +102,20 @@ class TeacherModel {
            progress_percentage = ?`, [userId, today, wordsLearned, totalWords, progressPercentage, wordsLearned, progressPercentage]);
         }
         catch (error) {
-            console.error('Error updating daily progress:', error);
+            console.error('❌ Error updating daily progress:', error);
             throw error;
         }
     }
     async getDailyProgress(userId, date) {
         const targetDate = date || (0, helpers_1.getCurrentDate)();
-        const rows = await (0, connection_1.query)('SELECT * FROM daily_progress WHERE user_id = ? AND date = ?', [userId, targetDate]);
+        const rows = await (0, connection_1.query)(`SELECT 
+        user_id as userId,
+        date,
+        words_learned as wordsLearned,
+        total_words as totalWords,
+        progress_percentage as progressPercentage
+       FROM daily_progress 
+       WHERE user_id = ? AND date = ?`, [userId, targetDate]);
         if (rows.length === 0) {
             return {
                 userId,
@@ -100,10 +128,17 @@ class TeacherModel {
         return rows[0];
     }
     async getProgressHistory(userId, days = 7) {
-        return await (0, connection_1.query)(`SELECT * FROM daily_progress 
+        const rows = await (0, connection_1.query)(`SELECT 
+        user_id as userId,
+        date,
+        words_learned as wordsLearned,
+        total_words as totalWords,
+        progress_percentage as progressPercentage
+       FROM daily_progress 
        WHERE user_id = ? 
        ORDER BY date DESC 
        LIMIT ?`, [userId, days]);
+        return rows;
     }
     async getUserLearnedWordsCount(userId, language) {
         const languageFilter = language ? 'AND language = ?' : '';

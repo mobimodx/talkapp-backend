@@ -1,6 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction, Request, Response } from 'express';
 declare class TranslationController {
     translate(req: Request, res: Response, next: NextFunction): Promise<void>;
+    translateAudio(req: Request, res: Response, next: NextFunction): Promise<void>;
     getHistory(req: Request, res: Response, next: NextFunction): Promise<void>;
     createSession(req: Request, res: Response, next: NextFunction): Promise<void>;
     endSession(req: Request, res: Response, next: NextFunction): Promise<void>;

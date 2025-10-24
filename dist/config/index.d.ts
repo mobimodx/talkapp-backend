@@ -18,6 +18,9 @@ interface Config {
     openai: {
         apiKey: string;
     };
+    google: {
+        apiKey: string;
+    };
     cors: {
         origin: string | string[];
     };

@@ -10,6 +10,8 @@ const validator_1 = require("../middleware/validator");
 const validators_1 = require("../utils/validators");
 const router = (0, express_1.Router)();
 router.post('/translate', auth_1.optionalAuthenticate, (0, validator_1.validateRequest)(validators_1.translationRequestSchema), translation_controller_1.default.translate);
+router.post('/transcribe', auth_1.optionalAuthenticate, (0, validator_1.validateRequest)(validators_1.translationRequestSchema), translation_controller_1.default.translate);
+router.post('/transcribe-audio', auth_1.optionalAuthenticate, (0, validator_1.validateRequest)(validators_1.audioTranslationRequestSchema), translation_controller_1.default.translateAudio);
 router.get('/history', auth_1.authenticate, translation_controller_1.default.getHistory);
 router.post('/session', auth_1.authenticate, translation_controller_1.default.createSession);
 router.post('/session/:sessionId/end', auth_1.authenticate, translation_controller_1.default.endSession);

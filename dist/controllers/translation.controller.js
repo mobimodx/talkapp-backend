@@ -3,9 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const gpt_service_1 = __importDefault(require("../services/gpt.service"));
-const tts_service_1 = __importDefault(require("../services/tts.service"));
 const translation_model_1 = __importDefault(require("../models/translation.model"));
+const gpt_service_1 = __importDefault(require("../services/gpt.service"));
+const speech_service_1 = __importDefault(require("../services/speech.service"));
+const tts_service_1 = __importDefault(require("../services/tts.service"));
 const helpers_1 = require("../utils/helpers");
 const logger_1 = __importDefault(require("../utils/logger"));
 class TranslationController {
@@ -49,6 +50,73 @@ class TranslationController {
             logger_1.default.info('Translation completed', {
                 userId,
                 originalLength: data.text.length,
+                translatedLength: gptResult.translatedText.length,
+            });
+            res.json((0, helpers_1.successResponse)(response, 'Translation successful'));
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    async translateAudio(req, res, next) {
+        try {
+            const userId = req.user?.userId;
+            const { audio, sourceLang, targetLang } = req.body;
+            logger_1.default.info('Audio translation request', {
+                userId,
+                sourceLang,
+                targetLang,
+                audioSize: audio?.length || 0,
+            });
+            let recognizedText = '';
+            let detectedLang = sourceLang;
+            try {
+                recognizedText = await speech_service_1.default.speechToText(audio, sourceLang);
+                detectedLang = sourceLang;
+            }
+            catch (error) {
+                try {
+                    recognizedText = await speech_service_1.default.speechToText(audio, targetLang);
+                    detectedLang = targetLang;
+                }
+                catch (error2) {
+                    throw new Error('Could not recognize speech in either language');
+                }
+            }
+            logger_1.default.info('Speech recognized', {
+                text: recognizedText.substring(0, 50),
+                detectedLang
+            });
+            const gptResult = await gpt_service_1.default.translateAndCorrect({
+                text: recognizedText,
+                sourceLang,
+                targetLang,
+            });
+            const ttsResult = await tts_service_1.default.textToSpeech({
+                text: gptResult.translatedText,
+                language: detectedLang === sourceLang ? targetLang : sourceLang,
+            });
+            if (userId) {
+                await translation_model_1.default.saveHistory({
+                    userId,
+                    originalText: recognizedText,
+                    correctedText: gptResult.correctedText,
+                    translatedText: gptResult.translatedText,
+                    sourceLang,
+                    targetLang,
+                });
+            }
+            const response = {
+                originalText: recognizedText,
+                correctedText: gptResult.correctedText,
+                translatedText: gptResult.translatedText,
+                sourceLang,
+                targetLang,
+                audioBase64: ttsResult.audioBase64,
+            };
+            logger_1.default.info('Audio translation completed', {
+                userId,
+                originalLength: recognizedText.length,
                 translatedLength: gptResult.translatedText.length,
             });
             res.json((0, helpers_1.successResponse)(response, 'Translation successful'));
