@@ -9,11 +9,17 @@ const errors_1 = require("../utils/errors");
 const logger_1 = __importDefault(require("../utils/logger"));
 class SpeechService {
     constructor() {
+        const clientConfig = {
+            apiEndpoint: 'us-speech.googleapis.com',
+        };
         if (config_1.default.google.credentials) {
             try {
                 const credentials = JSON.parse(config_1.default.google.credentials);
-                this.client = new speech_1.v2.SpeechClient({ credentials });
-                logger_1.default.info('Speech-to-Text initialized with JSON credentials');
+                this.client = new speech_1.v2.SpeechClient({
+                    ...clientConfig,
+                    credentials
+                });
+                logger_1.default.info('Speech-to-Text initialized with JSON credentials (US region)');
             }
             catch (error) {
                 logger_1.default.error('Failed to parse Google credentials JSON', error);
@@ -22,13 +28,14 @@ class SpeechService {
         }
         else if (config_1.default.google.apiKey) {
             this.client = new speech_1.v2.SpeechClient({
+                ...clientConfig,
                 apiKey: config_1.default.google.apiKey,
             });
-            logger_1.default.info('Speech-to-Text initialized with API Key');
+            logger_1.default.info('Speech-to-Text initialized with API Key (US region)');
         }
         else {
-            this.client = new speech_1.v2.SpeechClient();
-            logger_1.default.info('Speech-to-Text initialized with default credentials');
+            this.client = new speech_1.v2.SpeechClient(clientConfig);
+            logger_1.default.info('Speech-to-Text initialized with default credentials (US region)');
         }
     }
     async speechToText(audioBase64, primaryLang, alternativeLang) {
