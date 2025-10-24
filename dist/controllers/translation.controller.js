@@ -68,24 +68,50 @@ class TranslationController {
                 targetLang,
                 audioSize: audio?.length || 0,
             });
-            let recognizedText = '';
+            const speechResult = await speech_service_1.default.speechToText(audio, sourceLang, targetLang);
+            const recognizedText = speechResult.text;
+            const googleLangCode = speechResult.detectedLang.toLowerCase();
             let detectedLang = sourceLang;
-            try {
-                recognizedText = await speech_service_1.default.speechToText(audio, sourceLang);
-                detectedLang = sourceLang;
+            if (googleLangCode.startsWith('en')) {
+                detectedLang = 'en';
             }
-            catch (error) {
-                try {
-                    recognizedText = await speech_service_1.default.speechToText(audio, targetLang);
-                    detectedLang = targetLang;
-                }
-                catch (error2) {
-                    throw new Error('Could not recognize speech in either language');
-                }
+            else if (googleLangCode.startsWith('tr')) {
+                detectedLang = 'tr';
+            }
+            else if (googleLangCode.startsWith('es')) {
+                detectedLang = 'es';
+            }
+            else if (googleLangCode.startsWith('fr')) {
+                detectedLang = 'fr';
+            }
+            else if (googleLangCode.startsWith('de')) {
+                detectedLang = 'de';
+            }
+            else if (googleLangCode.startsWith('it')) {
+                detectedLang = 'it';
+            }
+            else if (googleLangCode.startsWith('pt')) {
+                detectedLang = 'pt';
+            }
+            else if (googleLangCode.startsWith('ru')) {
+                detectedLang = 'ru';
+            }
+            else if (googleLangCode.startsWith('ar')) {
+                detectedLang = 'ar';
+            }
+            else if (googleLangCode.startsWith('ja')) {
+                detectedLang = 'ja';
+            }
+            else if (googleLangCode.startsWith('ko')) {
+                detectedLang = 'ko';
+            }
+            else if (googleLangCode.startsWith('zh')) {
+                detectedLang = 'zh';
             }
             logger_1.default.info('Speech recognized', {
                 text: recognizedText.substring(0, 50),
-                detectedLang
+                detectedLang,
+                googleLangCode
             });
             const gptResult = await gpt_service_1.default.translateAndCorrect({
                 text: recognizedText,

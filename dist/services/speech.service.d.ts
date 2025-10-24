@@ -1,10 +1,11 @@
 import { SupportedLanguage } from '../types';
 declare class SpeechService {
-    private apiKey;
-    private baseURL;
+    private client;
     constructor();
-    speechToText(audioBase64: string, language: SupportedLanguage): Promise<string>;
-    private getLanguageCode;
+    speechToText(audioBase64: string, primaryLang?: SupportedLanguage, alternativeLang?: SupportedLanguage): Promise<{
+        text: string;
+        detectedLang: string;
+    }>;
 }
 declare const _default: SpeechService;
 export default _default;

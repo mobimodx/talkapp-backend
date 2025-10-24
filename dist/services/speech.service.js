@@ -3,76 +3,64 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const axios_1 = __importDefault(require("axios"));
+const speech_1 = require("@google-cloud/speech");
 const config_1 = __importDefault(require("../config"));
 const errors_1 = require("../utils/errors");
 const logger_1 = __importDefault(require("../utils/logger"));
 class SpeechService {
     constructor() {
-        this.baseURL = 'https://speech.googleapis.com/v1';
-        this.apiKey = config_1.default.google.apiKey;
+        if (config_1.default.google.apiKey) {
+            this.client = new speech_1.SpeechClient({
+                apiKey: config_1.default.google.apiKey,
+            });
+        }
+        else {
+            this.client = new speech_1.SpeechClient();
+        }
     }
-    async speechToText(audioBase64, language) {
+    async speechToText(audioBase64, primaryLang, alternativeLang) {
         try {
-            const languageCode = this.getLanguageCode(language);
-            logger_1.default.debug('Speech-to-Text request', {
-                language: languageCode,
+            logger_1.default.debug('Speech-to-Text V2 request (Chirp 3 - Auto Detection)', {
+                primaryLanguage: primaryLang || 'auto',
+                alternativeLanguage: alternativeLang || 'none',
                 audioSize: audioBase64.length,
             });
-            const response = await axios_1.default.post(`${this.baseURL}/speech:recognize?key=${this.apiKey}`, {
+            const request = {
                 config: {
-                    encoding: 'WEBM_OPUS',
-                    sampleRateHertz: 48000,
-                    languageCode: languageCode,
+                    languageCode: 'auto',
+                    model: 'latest_long',
                     enableAutomaticPunctuation: true,
-                    model: 'default',
+                    useEnhanced: true,
                 },
                 audio: {
                     content: audioBase64,
                 },
-            }, {
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-            const results = response.data.results;
-            if (!results || results.length === 0) {
+            };
+            const [response] = await this.client.recognize(request);
+            if (!response.results || response.results.length === 0) {
                 throw new Error('No transcription results');
             }
-            const transcription = results[0]?.alternatives?.[0]?.transcript || '';
+            const result = response.results[0];
+            const alternative = result.alternatives?.[0];
+            const transcription = alternative?.transcript || '';
+            const detectedLanguageCode = result.languageCode || 'en-US';
             if (!transcription) {
                 throw new Error('Empty transcription');
             }
-            logger_1.default.debug('Speech-to-Text completed', {
+            logger_1.default.debug('Speech-to-Text V2 completed', {
                 transcription: transcription.substring(0, 50),
-                confidence: results[0]?.alternatives?.[0]?.confidence || 0,
+                confidence: alternative?.confidence || 0,
+                detectedLanguage: detectedLanguageCode,
             });
-            return transcription;
+            return {
+                text: transcription,
+                detectedLang: detectedLanguageCode,
+            };
         }
         catch (error) {
-            logger_1.default.error('Speech-to-Text failed', error);
-            if (axios_1.default.isAxiosError(error)) {
-                throw new errors_1.ExternalServiceError(`Google Speech API error: ${error.response?.data?.error?.message || error.message}`, error.response?.status || 502);
-            }
-            throw new errors_1.ExternalServiceError('Failed to convert speech to text');
+            logger_1.default.error('Speech-to-Text V2 failed', error);
+            throw new errors_1.ExternalServiceError(`Google Speech API error: ${error.message || 'Failed to transcribe'}`, error.code || 502);
         }
-    }
-    getLanguageCode(language) {
-        const languageMap = {
-            en: 'en-US',
-            tr: 'tr-TR',
-            es: 'es-ES',
-            fr: 'fr-FR',
-            de: 'de-DE',
-            it: 'it-IT',
-            pt: 'pt-PT',
-            ru: 'ru-RU',
-            ar: 'ar-SA',
-            ja: 'ja-JP',
-            ko: 'ko-KR',
-            zh: 'zh-CN',
-        };
-        return languageMap[language] || 'en-US';
     }
 }
 exports.default = new SpeechService();
