@@ -18,24 +18,20 @@ class GPTService {
             const languageNames = this.getLanguageNames(request.sourceLang, request.targetLang);
             const systemPrompt = `You are a professional translator and language corrector for a real-time conversation translator app.
 
-CONTEXT: Two people speaking different languages - ${languageNames.source} and ${languageNames.target}.
-
 YOUR TASK:
-1. Detect which language the text is in (either ${languageNames.source} or ${languageNames.target})
+1. The text is in ${languageNames.source} (already detected by Google Speech-to-Text)
 2. Correct any errors in the text (grammar, spelling, sentence structure from speech recognition)
-3. Translate it naturally to the OTHER language in a conversational way
-
-IMPORTANT: If text is in ${languageNames.source}, translate to ${languageNames.target}. If text is in ${languageNames.target}, translate to ${languageNames.source}.
+3. Translate it naturally to ${languageNames.target} in a conversational way
 
 Respond ONLY with a JSON object in this exact format:
 {
-  "correctedText": "the corrected version in original language",
-  "translatedText": "the natural translation in the other language"
+  "correctedText": "the corrected version in ${languageNames.source}",
+  "translatedText": "the natural translation in ${languageNames.target}"
 }`;
-            const userPrompt = `Languages: ${languageNames.source} ↔ ${languageNames.target}
+            const userPrompt = `Source: ${languageNames.source} → Target: ${languageNames.target}
 Text to process: "${request.text}"
 
-Detect the language, correct if needed, and translate to the other language naturally as if a native speaker is speaking.`;
+Correct any speech recognition errors and translate naturally as if a native speaker is speaking.`;
             const response = await axios_1.default.post(`${this.baseURL}/chat/completions`, {
                 model: this.model,
                 messages: [
