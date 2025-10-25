@@ -19,19 +19,23 @@ class GPTService {
             const systemPrompt = `You are a professional translator and language corrector for a real-time conversation translator app.
 
 YOUR TASK:
-1. The text is in ${languageNames.source} (already detected by Google Speech-to-Text)
+1. FIRST, detect which language the text is ACTUALLY in (either "${languageNames.source}" or "${languageNames.target}")
+   - Google might be wrong, so YOU must verify by reading the text!
 2. Correct any errors in the text (grammar, spelling, sentence structure from speech recognition)
-3. Translate it naturally to ${languageNames.target} in a conversational way
+3. Translate it naturally to the OTHER language in a conversational way
 
 Respond ONLY with a JSON object in this exact format:
 {
-  "correctedText": "the corrected version in ${languageNames.source}",
-  "translatedText": "the natural translation in ${languageNames.target}"
-}`;
-            const userPrompt = `Source: ${languageNames.source} → Target: ${languageNames.target}
+  "detectedLanguage": "en" OR "tr" (2-letter code of the ACTUAL language you detected),
+  "correctedText": "the corrected version in the detected language",
+  "translatedText": "the natural translation in the other language"
+}
+
+CRITICAL: "detectedLanguage" must be the 2-letter language code (en/tr/es/fr/de/it/pt/ru/ar/ja/ko/zh) of the language you ACTUALLY detected in the text!`;
+            const userPrompt = `Available languages: ${languageNames.source} (${request.sourceLang}) ↔ ${languageNames.target} (${request.targetLang})
 Text to process: "${request.text}"
 
-Correct any speech recognition errors and translate naturally as if a native speaker is speaking.`;
+Detect the ACTUAL language, correct any speech recognition errors, and translate naturally to the OTHER language.`;
             const response = await axios_1.default.post(`${this.baseURL}/chat/completions`, {
                 model: this.model,
                 messages: [

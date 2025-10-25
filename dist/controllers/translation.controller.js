@@ -25,9 +25,12 @@ class TranslationController {
                 sourceLang: data.sourceLang,
                 targetLang: data.targetLang,
             });
+            const actualTargetLang = gptResult.detectedLanguage === data.sourceLang
+                ? data.targetLang
+                : data.sourceLang;
             const ttsResult = await tts_service_1.default.textToSpeech({
                 text: gptResult.translatedText,
-                language: data.targetLang,
+                language: actualTargetLang,
             });
             if (userId) {
                 await translation_model_1.default.saveHistory({
@@ -113,17 +116,18 @@ class TranslationController {
                 detectedLang,
                 googleLangCode
             });
-            const actualTargetLang = detectedLang === sourceLang ? targetLang : sourceLang;
-            logger_1.default.debug('Translation direction', {
-                detectedLang,
-                expectedSourceLang: sourceLang,
-                expectedTargetLang: targetLang,
-                actualTargetLang,
-            });
             const gptResult = await gpt_service_1.default.translateAndCorrect({
                 text: recognizedText,
                 sourceLang: detectedLang,
-                targetLang: actualTargetLang,
+                targetLang: detectedLang === sourceLang ? targetLang : sourceLang,
+            });
+            const actualDetectedLang = gptResult.detectedLanguage;
+            const actualTargetLang = actualDetectedLang === sourceLang ? targetLang : sourceLang;
+            logger_1.default.debug('Language detection comparison', {
+                googleDetected: detectedLang,
+                gptDetected: actualDetectedLang,
+                mismatch: detectedLang !== actualDetectedLang,
+                finalTargetLang: actualTargetLang,
             });
             const ttsResult = await tts_service_1.default.textToSpeech({
                 text: gptResult.translatedText,

@@ -133,6 +133,7 @@ export interface GPTTranslationRequest {
 export interface GPTTranslationResult {
     correctedText: string;
     translatedText: string;
+    detectedLanguage: SupportedLanguage;
 }
 export interface GPTWordGenerationRequest {
     language: SupportedLanguage;
