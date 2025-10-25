@@ -12,6 +12,7 @@ const logger_1 = __importDefault(require("../utils/logger"));
 class TranslationController {
     async translate(req, res, next) {
         try {
+            const startTime = Date.now();
             const userId = req.user?.userId;
             const data = req.body;
             logger_1.default.info('Translation request', {
@@ -20,18 +21,23 @@ class TranslationController {
                 targetLang: data.targetLang,
                 textLength: data.text.length,
             });
+            const gptStartTime = Date.now();
             const gptResult = await gpt_service_1.default.translateAndCorrect({
                 text: data.text,
                 sourceLang: data.sourceLang,
                 targetLang: data.targetLang,
             });
+            const gptDuration = Date.now() - gptStartTime;
             const actualTargetLang = gptResult.detectedLanguage === data.sourceLang
                 ? data.targetLang
                 : data.sourceLang;
+            const ttsStartTime = Date.now();
             const ttsResult = await tts_service_1.default.textToSpeech({
                 text: gptResult.translatedText,
                 language: actualTargetLang,
             });
+            const ttsDuration = Date.now() - ttsStartTime;
+            const dbStartTime = Date.now();
             if (userId) {
                 await translation_model_1.default.saveHistory({
                     userId,
@@ -42,6 +48,8 @@ class TranslationController {
                     targetLang: data.targetLang,
                 });
             }
+            const dbDuration = Date.now() - dbStartTime;
+            const totalDuration = Date.now() - startTime;
             const response = {
                 originalText: data.text,
                 correctedText: gptResult.correctedText,
@@ -54,6 +62,13 @@ class TranslationController {
                 userId,
                 originalLength: data.text.length,
                 translatedLength: gptResult.translatedText.length,
+                timings: {
+                    gpt: `${gptDuration}ms`,
+                    tts: `${ttsDuration}ms`,
+                    db: `${dbDuration}ms`,
+                    total: `${totalDuration}ms`,
+                },
+                breakdown: `GPT: ${gptDuration}ms | TTS: ${ttsDuration}ms | DB: ${dbDuration}ms | TOTAL: ${totalDuration}ms`,
             });
             res.json((0, helpers_1.successResponse)(response, 'Translation successful'));
         }
@@ -63,6 +78,7 @@ class TranslationController {
     }
     async translateAudio(req, res, next) {
         try {
+            const startTime = Date.now();
             const userId = req.user?.userId;
             const { audio, sourceLang, targetLang } = req.body;
             logger_1.default.info('Audio translation request', {
@@ -71,7 +87,9 @@ class TranslationController {
                 targetLang,
                 audioSize: audio?.length || 0,
             });
+            const speechStartTime = Date.now();
             const speechResult = await speech_service_1.default.speechToText(audio, sourceLang, targetLang);
+            const speechDuration = Date.now() - speechStartTime;
             const recognizedText = speechResult.text;
             const googleLangCode = speechResult.detectedLang.toLowerCase();
             let detectedLang = sourceLang;
@@ -114,13 +132,16 @@ class TranslationController {
             logger_1.default.info('Speech recognized', {
                 text: recognizedText.substring(0, 50),
                 detectedLang,
-                googleLangCode
+                googleLangCode,
+                speechDuration: `${speechDuration}ms`,
             });
+            const gptStartTime = Date.now();
             const gptResult = await gpt_service_1.default.translateAndCorrect({
                 text: recognizedText,
                 sourceLang: detectedLang,
                 targetLang: detectedLang === sourceLang ? targetLang : sourceLang,
             });
+            const gptDuration = Date.now() - gptStartTime;
             const actualDetectedLang = gptResult.detectedLanguage;
             const actualTargetLang = actualDetectedLang === sourceLang ? targetLang : sourceLang;
             logger_1.default.debug('Language detection comparison', {
@@ -128,11 +149,15 @@ class TranslationController {
                 gptDetected: actualDetectedLang,
                 mismatch: detectedLang !== actualDetectedLang,
                 finalTargetLang: actualTargetLang,
+                gptDuration: `${gptDuration}ms`,
             });
+            const ttsStartTime = Date.now();
             const ttsResult = await tts_service_1.default.textToSpeech({
                 text: gptResult.translatedText,
                 language: actualTargetLang,
             });
+            const ttsDuration = Date.now() - ttsStartTime;
+            const dbStartTime = Date.now();
             if (userId) {
                 await translation_model_1.default.saveHistory({
                     userId,
@@ -143,6 +168,8 @@ class TranslationController {
                     targetLang,
                 });
             }
+            const dbDuration = Date.now() - dbStartTime;
+            const totalDuration = Date.now() - startTime;
             const response = {
                 originalText: recognizedText,
                 correctedText: gptResult.correctedText,
@@ -155,6 +182,14 @@ class TranslationController {
                 userId,
                 originalLength: recognizedText.length,
                 translatedLength: gptResult.translatedText.length,
+                timings: {
+                    speech: `${speechDuration}ms`,
+                    gpt: `${gptDuration}ms`,
+                    tts: `${ttsDuration}ms`,
+                    db: `${dbDuration}ms`,
+                    total: `${totalDuration}ms`,
+                },
+                breakdown: `Speech: ${speechDuration}ms | GPT: ${gptDuration}ms | TTS: ${ttsDuration}ms | DB: ${dbDuration}ms | TOTAL: ${totalDuration}ms`,
             });
             res.json((0, helpers_1.successResponse)(response, 'Translation successful'));
         }
