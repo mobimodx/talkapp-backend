@@ -145,23 +145,27 @@ class SpeechService {
             const recognizerPath = `projects/${config_1.default.google.projectId}/locations/us/recognizers/_`;
             const streamingConfig = {
                 config: {
-                    autoDecodingConfig: {},
+                    explicitDecodingConfig: {
+                        encoding: 'LINEAR16',
+                        sampleRateHertz: 16000,
+                        audioChannelCount: 1,
+                    },
                     languageCodes: languageCodes,
                     model: 'long',
                     features: {
                         enableAutomaticPunctuation: true,
-                        enableWordConfidence: false,
                     },
                 },
                 streamingFeatures: {
                     interimResults: interimResults,
                 },
             };
-            const stream = this.client.streamingRecognize();
+            const stream = this.client._streamingRecognize();
             logger_1.default.info('Streaming recognition session created', {
                 recognizerPath,
                 model: 'long',
                 languageCodes,
+                encoding: 'LINEAR16',
             });
             return {
                 stream,
