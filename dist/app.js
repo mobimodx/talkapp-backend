@@ -8,19 +8,25 @@ const cors_1 = __importDefault(require("cors"));
 const express_1 = __importDefault(require("express"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const helmet_1 = __importDefault(require("helmet"));
+const http_1 = require("http");
 const morgan_1 = __importDefault(require("morgan"));
+const ws_1 = require("ws");
 const config_1 = __importDefault(require("./config"));
 const connection_1 = require("./database/connection");
 const errorHandler_1 = require("./middleware/errorHandler");
 const routes_1 = __importDefault(require("./routes"));
 const logger_1 = __importDefault(require("./utils/logger"));
+const streamingHandler_1 = require("./websocket/streamingHandler");
 class App {
     constructor() {
         this.app = (0, express_1.default)();
+        this.server = (0, http_1.createServer)(this.app);
+        this.wss = new ws_1.WebSocketServer({ noServer: true });
         this.initializeDatabase();
         this.initializeMiddlewares();
         this.initializeRoutes();
         this.initializeErrorHandling();
+        this.initializeWebSocket();
     }
     initializeDatabase() {
         try {
@@ -74,8 +80,25 @@ class App {
         this.app.use(errorHandler_1.notFoundHandler);
         this.app.use(errorHandler_1.errorHandler);
     }
+    initializeWebSocket() {
+        this.server.on('upgrade', (request, socket, head) => {
+            const pathname = new URL(request.url || '', `http://${request.headers.host}`).pathname;
+            if (pathname === '/ws/translation/stream') {
+                this.wss.handleUpgrade(request, socket, head, (ws) => {
+                    this.wss.emit('connection', ws, request);
+                });
+            }
+            else {
+                socket.destroy();
+            }
+        });
+        this.wss.on('connection', (ws) => {
+            (0, streamingHandler_1.handleStreamingConnection)(ws);
+        });
+        logger_1.default.info('WebSocket server initialized on /ws/translation/stream');
+    }
     listen() {
-        this.app.listen(config_1.default.port, () => {
+        this.server.listen(config_1.default.port, () => {
             logger_1.default.info(`
 ╔═══════════════════════════════════════╗
 ║                                       ║
@@ -87,6 +110,7 @@ class App {
 ║                                       ║
 ║  🌐 http://localhost:${config_1.default.port}           ║
 ║  📚 http://localhost:${config_1.default.port}/api/${config_1.default.apiVersion}/health  ║
+║  🔌 ws://localhost:${config_1.default.port}/ws/translation/stream ║
 ║                                       ║
 ╚═══════════════════════════════════════╝
       `);

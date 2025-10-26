@@ -128,6 +128,54 @@ class SpeechService {
         };
         return languageMap[language] || 'en-US';
     }
+    createStreamingRecognition(primaryLang, alternativeLang, interimResults = true) {
+        try {
+            const languageCodes = [];
+            if (primaryLang)
+                languageCodes.push(this.getLanguageCode(primaryLang));
+            if (alternativeLang)
+                languageCodes.push(this.getLanguageCode(alternativeLang));
+            if (languageCodes.length === 0)
+                languageCodes.push('auto');
+            logger_1.default.debug('Creating streaming recognition session', {
+                primaryLanguage: primaryLang || 'auto',
+                alternativeLanguage: alternativeLang || 'none',
+                interimResults,
+            });
+            const recognizerPath = `projects/${config_1.default.google.projectId}/locations/us/recognizers/_`;
+            const streamingConfig = {
+                config: {
+                    autoDecodingConfig: {},
+                    languageCodes: languageCodes,
+                    model: 'long',
+                    features: {
+                        enableAutomaticPunctuation: true,
+                        enableWordConfidence: false,
+                    },
+                },
+                streamingFeatures: {
+                    interimResults: interimResults,
+                },
+            };
+            const stream = this.client.streamingRecognize();
+            logger_1.default.info('Streaming recognition session created', {
+                recognizerPath,
+                model: 'long',
+                languageCodes,
+            });
+            return {
+                stream,
+                configRequest: {
+                    recognizer: recognizerPath,
+                    streamingConfig: streamingConfig,
+                },
+            };
+        }
+        catch (error) {
+            logger_1.default.error('Failed to create streaming recognition session', error);
+            throw new errors_1.ExternalServiceError(`Failed to create streaming session: ${error.message}`);
+        }
+    }
 }
 exports.default = new SpeechService();
 //# sourceMappingURL=speech.service.js.map

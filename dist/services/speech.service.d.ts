@@ -7,6 +7,10 @@ declare class SpeechService {
         detectedLang: string;
     }>;
     private getLanguageCode;
+    createStreamingRecognition(primaryLang?: SupportedLanguage, alternativeLang?: SupportedLanguage, interimResults?: boolean): {
+        stream: any;
+        configRequest: any;
+    };
 }
 declare const _default: SpeechService;
 export default _default;
