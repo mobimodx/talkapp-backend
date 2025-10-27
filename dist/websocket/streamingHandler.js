@@ -12,6 +12,8 @@ function handleStreamingConnection(ws) {
     const sessionId = Math.random().toString(36).substring(7);
     let silenceTimer = null;
     const SILENCE_THRESHOLD_MS = 2000;
+    const audioBuffer = [];
+    const MAX_BUFFER_SIZE = 50;
     logger_1.default.info(`Streaming WebSocket connected | sessionId: ${sessionId}`);
     const clearSilenceTimer = () => {
         if (silenceTimer) {
@@ -34,7 +36,15 @@ function handleStreamingConnection(ws) {
         try {
             if (isBinary) {
                 if (!isStreamActive || !googleStream) {
-                    logger_1.default.warn(`Audio chunk received but stream not active | sessionId: ${sessionId}`);
+                    if (audioBuffer.length < MAX_BUFFER_SIZE) {
+                        audioBuffer.push(data);
+                        if (audioBuffer.length === 1) {
+                            logger_1.default.debug(`Buffering early audio chunks | sessionId: ${sessionId}`);
+                        }
+                    }
+                    else {
+                        logger_1.default.warn(`Audio buffer full, dropping chunk | sessionId: ${sessionId}`);
+                    }
                     return;
                 }
                 googleStream.write({ audio: data });
@@ -59,6 +69,13 @@ function handleStreamingConnection(ws) {
                     googleStream = stream;
                     isStreamActive = true;
                     googleStream.write(configRequest);
+                    if (audioBuffer.length > 0) {
+                        logger_1.default.info(`Flushing ${audioBuffer.length} buffered audio chunks | sessionId: ${sessionId}`);
+                        audioBuffer.forEach(chunk => {
+                            googleStream.write({ audio: chunk });
+                        });
+                        audioBuffer.length = 0;
+                    }
                     googleStream.on('data', (response) => {
                         if (!response.results || response.results.length === 0)
                             return;
@@ -150,6 +167,7 @@ function handleStreamingConnection(ws) {
     ws.on('close', () => {
         logger_1.default.info(`Streaming WebSocket disconnected | sessionId: ${sessionId}`);
         clearSilenceTimer();
+        audioBuffer.length = 0;
         if (googleStream) {
             googleStream.end();
             googleStream = null;
@@ -159,6 +177,7 @@ function handleStreamingConnection(ws) {
     ws.on('error', (error) => {
         logger_1.default.error(`WebSocket error | sessionId: ${sessionId}`, error);
         clearSilenceTimer();
+        audioBuffer.length = 0;
         if (googleStream) {
             googleStream.end();
             googleStream = null;
