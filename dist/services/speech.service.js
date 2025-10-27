@@ -136,13 +136,13 @@ class SpeechService {
             if (alternativeLang)
                 languageCodes.push(this.getLanguageCode(alternativeLang));
             if (languageCodes.length === 0) {
-                languageCodes.push('tr-TR', 'en-US', 'es-ES', 'fr-FR', 'de-DE', 'it-IT', 'pt-PT', 'ru-RU', 'ar-SA', 'ja-JP');
+                languageCodes.push('auto');
             }
             logger_1.default.debug('Creating streaming recognition session', {
-                primaryLanguage: primaryLang || 'multi-language auto-detect',
+                primaryLanguage: primaryLang || 'auto',
                 alternativeLanguage: alternativeLang || 'none',
                 interimResults,
-                languageCodesCount: languageCodes.length,
+                languageCodes,
             });
             const recognizerPath = `projects/${config_1.default.google.projectId}/locations/us/recognizers/_`;
             const streamingConfig = {
@@ -153,7 +153,7 @@ class SpeechService {
                         audioChannelCount: 1,
                     },
                     languageCodes: languageCodes,
-                    model: 'long',
+                    model: 'chirp',
                     features: {
                         enableAutomaticPunctuation: true,
                     },
@@ -165,7 +165,7 @@ class SpeechService {
             const stream = this.client._streamingRecognize();
             logger_1.default.info('Streaming recognition session created', {
                 recognizerPath,
-                model: 'long',
+                model: 'chirp',
                 languageCodes,
                 encoding: 'LINEAR16',
             });
