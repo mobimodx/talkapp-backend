@@ -13,7 +13,8 @@ function handleStreamingConnection(ws) {
     let silenceTimer = null;
     const SILENCE_THRESHOLD_MS = 2000;
     const audioBuffer = [];
-    const MAX_BUFFER_SIZE = 50;
+    const MAX_BUFFER_SIZE = 200;
+    let bufferWarningMsgSent = false;
     logger_1.default.info(`Streaming WebSocket connected | sessionId: ${sessionId}`);
     const clearSilenceTimer = () => {
         if (silenceTimer) {
@@ -40,6 +41,14 @@ function handleStreamingConnection(ws) {
                         audioBuffer.push(data);
                         if (audioBuffer.length === 1) {
                             logger_1.default.debug(`Buffering early audio chunks | sessionId: ${sessionId}`);
+                        }
+                        if (audioBuffer.length === 100 && !bufferWarningMsgSent) {
+                            bufferWarningMsgSent = true;
+                            logger_1.default.warn(`Still waiting for "start" message after 10 seconds | sessionId: ${sessionId}`);
+                            ws.send(JSON.stringify({
+                                type: 'error',
+                                error: 'Please send "start" message before sending audio. Buffering audio...'
+                            }));
                         }
                     }
                     else {
