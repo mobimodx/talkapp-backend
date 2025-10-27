@@ -149,6 +149,38 @@ Backend, Google'dan gelen sonuçlara göre otomatik sessizlik algılar:
 
 ## FRONTEND KULLANIMI
 
+### Audio Gönderme (2 Yöntem)
+
+#### Yöntem 1: Binary (Önerilen - Hızlı)
+```javascript
+const ws = new WebSocket('wss://voica.app/ws/translation/stream');
+
+ws.onopen = () => {
+  // Start session (JSON)
+  ws.send(JSON.stringify({
+    type: 'start',
+    sourceLang: 'tr',
+    targetLang: 'en',
+    interimResults: true
+  }));
+};
+
+// Send raw audio chunks (Binary)
+mediaRecorder.ondataavailable = (e) => {
+  ws.send(e.data); // Binary message
+};
+```
+
+#### Yöntem 2: JSON + Base64 (Legacy)
+```javascript
+// Send audio as JSON
+ws.send(JSON.stringify({
+  type: 'audio',
+  audio: base64AudioString
+}));
+```
+
+### Sonuç Alma
 ```javascript
 ws.onmessage = (e) => {
   const data = JSON.parse(e.data);
