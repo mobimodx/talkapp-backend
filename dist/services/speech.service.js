@@ -10,7 +10,7 @@ const logger_1 = __importDefault(require("../utils/logger"));
 class SpeechService {
     constructor() {
         const clientConfig = {
-            apiEndpoint: 'speech.googleapis.com',
+            apiEndpoint: 'us-speech.googleapis.com',
         };
         if (config_1.default.google.credentials) {
             try {
@@ -19,7 +19,7 @@ class SpeechService {
                     ...clientConfig,
                     credentials
                 });
-                logger_1.default.info('Speech-to-Text initialized with JSON credentials (Global endpoint)');
+                logger_1.default.info('Speech-to-Text initialized with JSON credentials (US endpoint)');
             }
             catch (error) {
                 logger_1.default.error('Failed to parse Google credentials JSON', error);
@@ -31,11 +31,11 @@ class SpeechService {
                 ...clientConfig,
                 apiKey: config_1.default.google.apiKey,
             });
-            logger_1.default.info('Speech-to-Text initialized with API Key (Global endpoint)');
+            logger_1.default.info('Speech-to-Text initialized with API Key (US endpoint)');
         }
         else {
             this.client = new speech_1.v2.SpeechClient(clientConfig);
-            logger_1.default.info('Speech-to-Text initialized with default credentials (Global endpoint)');
+            logger_1.default.info('Speech-to-Text initialized with default credentials (US endpoint)');
         }
     }
     async speechToText(audioBase64, primaryLang, alternativeLang) {
@@ -53,13 +53,13 @@ class SpeechService {
                 languageCodes.push(this.getLanguageCode(alternativeLang));
             if (languageCodes.length === 0)
                 languageCodes.push('auto');
-            const recognizerPath = `projects/${config_1.default.google.projectId}/locations/global/recognizers/_`;
+            const recognizerPath = `projects/${config_1.default.google.projectId}/locations/us/recognizers/_`;
             const request = {
                 recognizer: recognizerPath,
                 config: {
                     autoDecodingConfig: {},
                     languageCodes: languageCodes,
-                    model: 'chirp',
+                    model: 'chirp_3',
                     features: {
                         enableAutomaticPunctuation: true,
                         enableWordTimeOffsets: false,
@@ -144,7 +144,7 @@ class SpeechService {
                 interimResults,
                 languageCodes,
             });
-            const recognizerPath = `projects/${config_1.default.google.projectId}/locations/global/recognizers/_`;
+            const recognizerPath = `projects/${config_1.default.google.projectId}/locations/us/recognizers/_`;
             const streamingConfig = {
                 config: {
                     explicitDecodingConfig: {
@@ -153,7 +153,7 @@ class SpeechService {
                         audioChannelCount: 1,
                     },
                     languageCodes: languageCodes,
-                    model: 'chirp',
+                    model: 'chirp_3',
                     features: {
                         enableAutomaticPunctuation: true,
                     },
@@ -165,7 +165,7 @@ class SpeechService {
             const stream = this.client._streamingRecognize();
             logger_1.default.info('Streaming recognition session created', {
                 recognizerPath,
-                model: 'chirp',
+                model: 'chirp_3',
                 languageCodes,
                 encoding: 'LINEAR16',
             });
