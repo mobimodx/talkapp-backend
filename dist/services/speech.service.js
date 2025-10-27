@@ -53,13 +53,13 @@ class SpeechService {
                 languageCodes.push(this.getLanguageCode(alternativeLang));
             if (languageCodes.length === 0)
                 languageCodes.push('auto');
-            const recognizerPath = `projects/${config_1.default.google.projectId}/locations/us/recognizers/_`;
+            const recognizerPath = `projects/${config_1.default.google.projectId}/locations/global/recognizers/_`;
             const request = {
                 recognizer: recognizerPath,
                 config: {
                     autoDecodingConfig: {},
                     languageCodes: languageCodes,
-                    model: 'long',
+                    model: 'chirp',
                     features: {
                         enableAutomaticPunctuation: true,
                         enableWordTimeOffsets: false,
@@ -144,7 +144,7 @@ class SpeechService {
                 interimResults,
                 languageCodes,
             });
-            const recognizerPath = `projects/${config_1.default.google.projectId}/locations/us/recognizers/_`;
+            const recognizerPath = `projects/${config_1.default.google.projectId}/locations/global/recognizers/_`;
             const streamingConfig = {
                 config: {
                     explicitDecodingConfig: {
