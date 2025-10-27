@@ -30,8 +30,16 @@ function handleStreamingConnection(ws) {
     };
     const connectedMsg = { type: 'connected' };
     ws.send(JSON.stringify(connectedMsg));
-    ws.on('message', async (data) => {
+    ws.on('message', async (data, isBinary) => {
         try {
+            if (isBinary) {
+                if (!isStreamActive || !googleStream) {
+                    logger_1.default.warn(`Audio chunk received but stream not active | sessionId: ${sessionId}`);
+                    return;
+                }
+                googleStream.write({ audio: data });
+                return;
+            }
             const message = JSON.parse(data.toString());
             switch (message.type) {
                 case 'start': {
