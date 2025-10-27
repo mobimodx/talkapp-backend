@@ -42,13 +42,57 @@ function handleStreamingConnection(ws) {
                         if (audioBuffer.length === 1) {
                             logger_1.default.debug(`Buffering early audio chunks | sessionId: ${sessionId}`);
                         }
-                        if (audioBuffer.length === 100 && !bufferWarningMsgSent) {
+                        if (audioBuffer.length === 10 && !bufferWarningMsgSent) {
                             bufferWarningMsgSent = true;
-                            logger_1.default.warn(`Still waiting for "start" message after 10 seconds | sessionId: ${sessionId}`);
-                            ws.send(JSON.stringify({
-                                type: 'error',
-                                error: 'Please send "start" message before sending audio. Buffering audio...'
-                            }));
+                            logger_1.default.info(`Auto-starting session with default parameters | sessionId: ${sessionId}`);
+                            const { stream, configRequest } = speech_service_1.default.createStreamingRecognition('tr', 'en', true);
+                            googleStream = stream;
+                            isStreamActive = true;
+                            googleStream.write(configRequest);
+                            logger_1.default.info(`Flushing ${audioBuffer.length} buffered audio chunks | sessionId: ${sessionId}`);
+                            audioBuffer.forEach(chunk => {
+                                googleStream.write({ audio: chunk });
+                            });
+                            audioBuffer.length = 0;
+                            googleStream.on('data', (response) => {
+                                if (!response.results || response.results.length === 0)
+                                    return;
+                                const result = response.results[0];
+                                const alternative = result.alternatives?.[0];
+                                if (!alternative)
+                                    return;
+                                resetSilenceTimer();
+                                const responseMsg = {
+                                    type: result.isFinal ? 'final' : 'interim',
+                                    transcript: alternative.transcript,
+                                    confidence: alternative.confidence,
+                                    languageCode: result.languageCode,
+                                    stability: result.stability,
+                                };
+                                ws.send(JSON.stringify(responseMsg));
+                                if (result.isFinal) {
+                                    logger_1.default.debug(`Final transcript | sessionId: ${sessionId}`, {
+                                        transcript: alternative.transcript.substring(0, 50),
+                                        confidence: alternative.confidence,
+                                        languageCode: result.languageCode,
+                                    });
+                                }
+                            });
+                            googleStream.on('error', (error) => {
+                                logger_1.default.error(`Google stream error | sessionId: ${sessionId}`, error);
+                                clearSilenceTimer();
+                                ws.send(JSON.stringify({
+                                    type: 'error',
+                                    error: error.message
+                                }));
+                                isStreamActive = false;
+                            });
+                            googleStream.on('end', () => {
+                                logger_1.default.info(`Google stream ended | sessionId: ${sessionId}`);
+                                clearSilenceTimer();
+                                ws.send(JSON.stringify({ type: 'stopped' }));
+                                isStreamActive = false;
+                            });
                         }
                     }
                     else {
