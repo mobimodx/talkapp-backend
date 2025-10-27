@@ -135,12 +135,14 @@ class SpeechService {
                 languageCodes.push(this.getLanguageCode(primaryLang));
             if (alternativeLang)
                 languageCodes.push(this.getLanguageCode(alternativeLang));
-            if (languageCodes.length === 0)
-                languageCodes.push('auto');
+            if (languageCodes.length === 0) {
+                languageCodes.push('tr-TR', 'en-US', 'es-ES', 'fr-FR', 'de-DE', 'it-IT', 'pt-PT', 'ru-RU', 'ar-SA', 'ja-JP');
+            }
             logger_1.default.debug('Creating streaming recognition session', {
-                primaryLanguage: primaryLang || 'auto',
+                primaryLanguage: primaryLang || 'multi-language auto-detect',
                 alternativeLanguage: alternativeLang || 'none',
                 interimResults,
+                languageCodesCount: languageCodes.length,
             });
             const recognizerPath = `projects/${config_1.default.google.projectId}/locations/us/recognizers/_`;
             const streamingConfig = {

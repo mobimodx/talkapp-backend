@@ -4,8 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handleStreamingConnection = handleStreamingConnection;
-const speech_service_1 = __importDefault(require("../services/speech.service"));
 const gpt_service_1 = __importDefault(require("../services/gpt.service"));
+const speech_service_1 = __importDefault(require("../services/speech.service"));
 const tts_service_1 = __importDefault(require("../services/tts.service"));
 const logger_1 = __importDefault(require("../utils/logger"));
 function handleStreamingConnection(ws) {
@@ -17,7 +17,7 @@ function handleStreamingConnection(ws) {
     const audioBuffer = [];
     const MAX_BUFFER_SIZE = 200;
     let bufferWarningMsgSent = false;
-    let targetLang = 'en';
+    let targetLang = null;
     logger_1.default.info(`Streaming WebSocket connected | sessionId: ${sessionId}`);
     const clearSilenceTimer = () => {
         if (silenceTimer) {
@@ -90,6 +90,16 @@ function handleStreamingConnection(ws) {
                                     confidence: alternative.confidence,
                                     languageCode: result.languageCode,
                                 });
+                                if (!targetLang) {
+                                    const responseMsg = {
+                                        type: 'final',
+                                        transcript,
+                                        confidence: alternative.confidence,
+                                        languageCode: result.languageCode,
+                                    };
+                                    ws.send(JSON.stringify(responseMsg));
+                                    return;
+                                }
                                 try {
                                     const detectedLang = (result.languageCode?.split('-')[0] || 'auto');
                                     const startGpt = Date.now();
@@ -230,6 +240,16 @@ function handleStreamingConnection(ws) {
                             confidence: alternative.confidence,
                             languageCode: result.languageCode,
                         });
+                        if (!targetLang) {
+                            const responseMsg = {
+                                type: 'final',
+                                transcript,
+                                confidence: alternative.confidence,
+                                languageCode: result.languageCode,
+                            };
+                            ws.send(JSON.stringify(responseMsg));
+                            return;
+                        }
                         try {
                             const detectedLang = (result.languageCode?.split('-')[0] || 'auto');
                             const startGpt = Date.now();
