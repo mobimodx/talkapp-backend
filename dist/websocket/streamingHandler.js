@@ -47,7 +47,10 @@ function handleStreamingConnection(ws) {
                         }
                         if (audioBuffer.length === 10 && !bufferWarningMsgSent) {
                             bufferWarningMsgSent = true;
-                            logger_1.default.info(`Auto-starting session with auto language detection | sessionId: ${sessionId}`);
+                            logger_1.default.info(`Auto-starting session with auto language detection | sessionId: ${sessionId}`, {
+                                targetLang: targetLang || 'NOT SET',
+                                note: 'No start message received - auto-starting without translation',
+                            });
                             const { stream, configRequest } = speech_service_1.default.createStreamingRecognition(undefined, undefined, true);
                             googleStream = stream;
                             isStreamActive = true;
@@ -89,8 +92,14 @@ function handleStreamingConnection(ws) {
                                     transcript: transcript.substring(0, 50),
                                     confidence: alternative.confidence,
                                     languageCode: result.languageCode,
+                                    targetLang: targetLang || 'NOT SET',
                                 });
                                 if (!targetLang) {
+                                    logger_1.default.warn(`Skipping translation - no targetLang | sessionId: ${sessionId}`, {
+                                        targetLang: 'NOT SET',
+                                        transcript: transcript.substring(0, 30),
+                                        note: 'Client did not send targetLang in start message',
+                                    });
                                     const responseMsg = {
                                         type: 'final',
                                         transcript,
@@ -179,6 +188,12 @@ function handleStreamingConnection(ws) {
                 return;
             }
             const message = JSON.parse(data.toString());
+            logger_1.default.info(`Client message received | sessionId: ${sessionId}`, {
+                type: message.type,
+                targetLang: message.targetLang,
+                sourceLang: message.sourceLang,
+                interimResults: message.interimResults,
+            });
             switch (message.type) {
                 case 'start': {
                     if (isStreamActive) {
@@ -190,10 +205,20 @@ function handleStreamingConnection(ws) {
                     }
                     if (message.targetLang) {
                         targetLang = message.targetLang;
+                        logger_1.default.info(`Target language set from client | sessionId: ${sessionId}`, {
+                            targetLang,
+                            note: 'Translation + TTS will be enabled',
+                        });
+                    }
+                    else {
+                        logger_1.default.warn(`No targetLang provided in start message | sessionId: ${sessionId}`, {
+                            targetLang: 'NOT SET',
+                            note: 'Translation + TTS will be DISABLED',
+                        });
                     }
                     logger_1.default.info(`Starting streaming session | sessionId: ${sessionId}`, {
                         sourceLang: message.sourceLang || 'auto',
-                        targetLang,
+                        targetLang: targetLang || 'NOT SET',
                         interimResults: message.interimResults ?? true,
                     });
                     const { stream, configRequest } = speech_service_1.default.createStreamingRecognition(message.sourceLang, undefined, message.interimResults ?? true);
@@ -239,8 +264,14 @@ function handleStreamingConnection(ws) {
                             transcript: transcript.substring(0, 50),
                             confidence: alternative.confidence,
                             languageCode: result.languageCode,
+                            targetLang: targetLang || 'NOT SET',
                         });
                         if (!targetLang) {
+                            logger_1.default.warn(`Skipping translation - no targetLang | sessionId: ${sessionId}`, {
+                                targetLang: 'NOT SET',
+                                transcript: transcript.substring(0, 30),
+                                note: 'Client did not send targetLang in start message',
+                            });
                             const responseMsg = {
                                 type: 'final',
                                 transcript,
