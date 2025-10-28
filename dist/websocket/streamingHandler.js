@@ -120,11 +120,12 @@ function handleStreamingConnection(ws) {
                                         logger_1.default.debug(`Same language detected (${detectedLang}), skipping GPT translation | sessionId: ${sessionId}`);
                                     }
                                     else {
+                                        const gptTargetLang = (detectedLang === targetLang) ? sourceLang : targetLang;
                                         const startGpt = Date.now();
                                         const gptResult = await gpt_service_1.default.translateAndCorrect({
                                             text: transcript,
                                             sourceLang: detectedLang,
-                                            targetLang: targetLang,
+                                            targetLang: gptTargetLang,
                                         });
                                         const gptTime = Date.now() - startGpt;
                                         translatedText = gptResult.translatedText;
@@ -302,11 +303,12 @@ function handleStreamingConnection(ws) {
                                 logger_1.default.debug(`Same language detected (${detectedLang}), skipping GPT translation | sessionId: ${sessionId}`);
                             }
                             else {
+                                const gptTargetLang = (detectedLang === targetLang) ? sourceLang : targetLang;
                                 const startGpt = Date.now();
                                 const gptResult = await gpt_service_1.default.translateAndCorrect({
                                     text: transcript,
                                     sourceLang: detectedLang,
-                                    targetLang: targetLang,
+                                    targetLang: gptTargetLang,
                                 });
                                 const gptTime = Date.now() - startGpt;
                                 translatedText = gptResult.translatedText;
