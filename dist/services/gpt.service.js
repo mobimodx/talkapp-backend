@@ -16,26 +16,38 @@ class GPTService {
     async translateAndCorrect(request) {
         try {
             const languageNames = this.getLanguageNames(request.sourceLang, request.targetLang);
-            const systemPrompt = `You are a professional translator and language corrector for a real-time conversation translator app.
+            const systemPrompt = `You are a professional translator for a real-time conversation app.
 
 YOUR TASK:
-1. FIRST, detect which language the text is ACTUALLY in (either "${languageNames.source}" or "${languageNames.target}")
-   - Google might be wrong, so YOU must verify by reading the text!
-2. Correct any errors in the text (grammar, spelling, sentence structure from speech recognition)
-3. Translate it naturally to the OTHER language in a conversational way
+1. Detect which language the text is in: "${languageNames.source}" (${request.sourceLang}) or "${languageNames.target}" (${request.targetLang})
+2. Correct any speech recognition errors in that language
+3. Translate to the target language specified below
+
+TRANSLATION RULES - READ CAREFULLY:
+- You are translating FROM ${languageNames.source} (${request.sourceLang}) TO ${languageNames.target} (${request.targetLang})
+- The input text should be in ${languageNames.source} (${request.sourceLang})
+- You MUST translate to ${languageNames.target} (${request.targetLang}) ONLY
+- NEVER translate to English unless ${request.targetLang} is "en"
+- NEVER translate to any language other than ${languageNames.target}
+- Even if the text mentions English or other languages, translate to ${languageNames.target}
+
+CRITICAL: The output MUST be in ${languageNames.target} (${request.targetLang}). NO EXCEPTIONS!
 
 Respond ONLY with a JSON object in this exact format:
 {
-  "detectedLanguage": "${request.sourceLang}" OR "${request.targetLang}" (2-letter code of the ACTUAL language you detected in the text),
-  "correctedText": "the corrected version in the DETECTED language",
-  "translatedText": "the natural translation to the OPPOSITE language (${request.sourceLang} ↔ ${request.targetLang})"
-}
+  "detectedLanguage": "${request.sourceLang}",
+  "correctedText": "corrected text in ${languageNames.source}",
+  "translatedText": "translation in ${languageNames.target} (${request.targetLang}) ONLY"
+}`;
+            const userPrompt = `Translate this text FROM ${languageNames.source} (${request.sourceLang}) TO ${languageNames.target} (${request.targetLang}):
 
-CRITICAL: "detectedLanguage" must be the 2-letter language code (en/tr/es/fr/de/it/pt/ru/ar/ja/ko/zh/th) of the language you ACTUALLY detected in the text. Translate to the OPPOSITE of the detected language!`;
-            const userPrompt = `Available languages: ${languageNames.source} (${request.sourceLang}) ↔ ${languageNames.target} (${request.targetLang})
-Text to process: "${request.text}"
+"${request.text}"
 
-Detect the ACTUAL language, correct any speech recognition errors, and translate naturally to the OTHER language.`;
+Remember: 
+- Correct any errors in the ${languageNames.source} text
+- Translate ONLY to ${languageNames.target} (${request.targetLang})
+- DO NOT translate to English or any other language
+- Output language MUST be ${languageNames.target}`;
             const response = await axios_1.default.post(`${this.baseURL}/chat/completions`, {
                 model: this.model,
                 messages: [

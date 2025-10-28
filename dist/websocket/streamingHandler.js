@@ -35,6 +35,29 @@ function handleStreamingConnection(ws) {
             }
         }, SILENCE_THRESHOLD_MS);
     };
+    const determineTranslationDirection = (detectedLang) => {
+        if (detectedLang === sourceLang && sourceLang !== null) {
+            return {
+                gptSource: detectedLang,
+                gptTarget: targetLang,
+                ttsLang: targetLang,
+            };
+        }
+        else if (detectedLang === targetLang && targetLang !== null && sourceLang !== null) {
+            return {
+                gptSource: detectedLang,
+                gptTarget: sourceLang,
+                ttsLang: sourceLang,
+            };
+        }
+        else {
+            return {
+                gptSource: detectedLang,
+                gptTarget: targetLang,
+                ttsLang: targetLang,
+            };
+        }
+    };
     const connectedMsg = { type: 'connected' };
     ws.send(JSON.stringify(connectedMsg));
     ws.on('message', async (data, isBinary) => {
@@ -112,34 +135,31 @@ function handleStreamingConnection(ws) {
                                 }
                                 try {
                                     const detectedLang = (result.languageCode?.split('-')[0] || 'auto');
-                                    let translatedText;
-                                    let detectedLanguage;
-                                    const gptTargetLang = (detectedLang === sourceLang && sourceLang !== null)
-                                        ? targetLang
-                                        : (detectedLang === targetLang && targetLang !== null)
-                                            ? sourceLang
-                                            : targetLang;
+                                    const { gptSource, gptTarget, ttsLang } = determineTranslationDirection(detectedLang);
+                                    logger_1.default.debug(`Translation direction | sessionId: ${sessionId}`, {
+                                        detected: detectedLang,
+                                        gptSource,
+                                        gptTarget,
+                                        ttsLang,
+                                        sourceLang,
+                                        targetLang,
+                                    });
                                     const startGpt = Date.now();
                                     const gptResult = await gpt_service_1.default.translateAndCorrect({
                                         text: transcript,
-                                        sourceLang: detectedLang,
-                                        targetLang: gptTargetLang,
+                                        sourceLang: gptSource,
+                                        targetLang: gptTarget,
                                     });
                                     const gptTime = Date.now() - startGpt;
-                                    translatedText = gptResult.translatedText;
-                                    detectedLanguage = gptResult.detectedLanguage;
+                                    const translatedText = gptResult.translatedText;
+                                    const detectedLanguage = gptResult.detectedLanguage;
                                     logger_1.default.debug(`GPT translation completed | sessionId: ${sessionId}`, {
                                         original: transcript.substring(0, 30),
                                         translated: gptResult.translatedText.substring(0, 30),
                                         detectedLang: gptResult.detectedLanguage,
-                                        gptTarget: gptTargetLang,
+                                        gptTarget,
                                         timeMs: gptTime,
                                     });
-                                    const ttsLang = (detectedLang === sourceLang && sourceLang !== null)
-                                        ? targetLang
-                                        : (detectedLang === targetLang)
-                                            ? sourceLang
-                                            : targetLang;
                                     const startTts = Date.now();
                                     const ttsResult = await tts_service_1.default.textToSpeech({
                                         text: translatedText,
@@ -192,7 +212,14 @@ function handleStreamingConnection(ws) {
                         }
                     }
                     else {
-                        logger_1.default.warn(`Audio buffer full, dropping chunk | sessionId: ${sessionId}`);
+                        if (!bufferWarningMsgSent) {
+                            bufferWarningMsgSent = true;
+                            logger_1.default.warn(`Audio buffer overflow (${MAX_BUFFER_SIZE} chunks) | sessionId: ${sessionId}`, {
+                                note: 'Start message not received - discarding old chunks',
+                            });
+                        }
+                        audioBuffer.shift();
+                        audioBuffer.push(data);
                     }
                     return;
                 }
@@ -200,12 +227,12 @@ function handleStreamingConnection(ws) {
                 return;
             }
             const message = JSON.parse(data.toString());
-            logger_1.default.info(`Client message received | sessionId: ${sessionId}`, {
+            logger_1.default.info(`Client message received | sessionId: ${sessionId}`, JSON.stringify({
                 type: message.type,
                 targetLang: message.targetLang,
                 sourceLang: message.sourceLang,
                 interimResults: message.interimResults,
-            });
+            }));
             switch (message.type) {
                 case 'start': {
                     if (isStreamActive) {
@@ -215,28 +242,20 @@ function handleStreamingConnection(ws) {
                         }));
                         return;
                     }
-                    if (message.sourceLang) {
-                        sourceLang = message.sourceLang;
-                    }
-                    if (message.targetLang) {
-                        targetLang = message.targetLang;
+                    targetLang = message.targetLang || null;
+                    sourceLang = message.sourceLang || null;
+                    if (targetLang) {
                         logger_1.default.info(`Target language set from client | sessionId: ${sessionId}`, {
                             targetLang,
                             note: 'Translation + TTS will be enabled',
                         });
                     }
-                    else {
-                        logger_1.default.warn(`No targetLang provided in start message | sessionId: ${sessionId}`, {
-                            targetLang: 'NOT SET',
-                            note: 'Translation + TTS will be DISABLED',
-                        });
-                    }
                     logger_1.default.info(`Starting streaming session | sessionId: ${sessionId}`, {
                         sourceLang: sourceLang || 'auto',
-                        targetLang: targetLang || 'NOT SET',
-                        interimResults: message.interimResults ?? true,
+                        targetLang: targetLang || 'none',
+                        interimResults: message.interimResults !== false,
                     });
-                    const { stream, configRequest } = speech_service_1.default.createStreamingRecognition(message.sourceLang, undefined, message.interimResults ?? true);
+                    const { stream, configRequest } = speech_service_1.default.createStreamingRecognition(sourceLang || undefined, undefined, message.interimResults !== false);
                     googleStream = stream;
                     isStreamActive = true;
                     googleStream.write(configRequest);
@@ -276,7 +295,7 @@ function handleStreamingConnection(ws) {
                             return;
                         }
                         logger_1.default.debug(`Final transcript | sessionId: ${sessionId}`, {
-                            transcript: transcript.substring(0, 50),
+                            transcript,
                             confidence: alternative.confidence,
                             languageCode: result.languageCode,
                             targetLang: targetLang || 'NOT SET',
@@ -298,34 +317,31 @@ function handleStreamingConnection(ws) {
                         }
                         try {
                             const detectedLang = (result.languageCode?.split('-')[0] || 'auto');
-                            let translatedText;
-                            let detectedLanguage;
-                            const gptTargetLang = (detectedLang === sourceLang && sourceLang !== null)
-                                ? targetLang
-                                : (detectedLang === targetLang && targetLang !== null)
-                                    ? sourceLang
-                                    : targetLang;
+                            const { gptSource, gptTarget, ttsLang } = determineTranslationDirection(detectedLang);
+                            logger_1.default.debug(`Translation direction | sessionId: ${sessionId}`, {
+                                detected: detectedLang,
+                                gptSource,
+                                gptTarget,
+                                ttsLang,
+                                sourceLang,
+                                targetLang,
+                            });
                             const startGpt = Date.now();
                             const gptResult = await gpt_service_1.default.translateAndCorrect({
                                 text: transcript,
-                                sourceLang: detectedLang,
-                                targetLang: gptTargetLang,
+                                sourceLang: gptSource,
+                                targetLang: gptTarget,
                             });
                             const gptTime = Date.now() - startGpt;
-                            translatedText = gptResult.translatedText;
-                            detectedLanguage = gptResult.detectedLanguage;
+                            const translatedText = gptResult.translatedText;
+                            const detectedLanguage = gptResult.detectedLanguage;
                             logger_1.default.debug(`GPT translation completed | sessionId: ${sessionId}`, {
                                 original: transcript.substring(0, 30),
                                 translated: gptResult.translatedText.substring(0, 30),
                                 detectedLang: gptResult.detectedLanguage,
-                                gptTarget: gptTargetLang,
+                                gptTarget,
                                 timeMs: gptTime,
                             });
-                            const ttsLang = (detectedLang === sourceLang && sourceLang !== null)
-                                ? targetLang
-                                : (detectedLang === targetLang)
-                                    ? sourceLang
-                                    : targetLang;
                             const startTts = Date.now();
                             const ttsResult = await tts_service_1.default.textToSpeech({
                                 text: translatedText,
