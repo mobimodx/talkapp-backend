@@ -137,10 +137,15 @@ function handleStreamingConnection(ws) {
                                             timeMs: gptTime,
                                         });
                                     }
+                                    const ttsLang = (detectedLang === sourceLang && sourceLang !== null)
+                                        ? targetLang
+                                        : (detectedLang === targetLang)
+                                            ? sourceLang
+                                            : targetLang;
                                     const startTts = Date.now();
                                     const ttsResult = await tts_service_1.default.textToSpeech({
                                         text: translatedText,
-                                        language: targetLang,
+                                        language: ttsLang,
                                     });
                                     const ttsTime = Date.now() - startTts;
                                     logger_1.default.debug(`TTS completed | sessionId: ${sessionId}`, {
@@ -320,10 +325,15 @@ function handleStreamingConnection(ws) {
                                     timeMs: gptTime,
                                 });
                             }
+                            const ttsLang = (detectedLang === sourceLang && sourceLang !== null)
+                                ? targetLang
+                                : (detectedLang === targetLang)
+                                    ? sourceLang
+                                    : targetLang;
                             const startTts = Date.now();
                             const ttsResult = await tts_service_1.default.textToSpeech({
                                 text: translatedText,
-                                language: targetLang,
+                                language: ttsLang,
                             });
                             const ttsTime = Date.now() - startTts;
                             logger_1.default.debug(`TTS completed | sessionId: ${sessionId}`, {
