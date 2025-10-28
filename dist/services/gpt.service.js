@@ -26,12 +26,12 @@ YOUR TASK:
 
 Respond ONLY with a JSON object in this exact format:
 {
-  "detectedLanguage": "en" OR "tr" (2-letter code of the ACTUAL language you detected),
-  "correctedText": "the corrected version in the detected language",
-  "translatedText": "the natural translation in the other language"
+  "detectedLanguage": "${request.sourceLang}" OR "${request.targetLang}" (2-letter code of the ACTUAL language you detected in the text),
+  "correctedText": "the corrected version in the DETECTED language",
+  "translatedText": "the natural translation to the OPPOSITE language (${request.sourceLang} ↔ ${request.targetLang})"
 }
 
-CRITICAL: "detectedLanguage" must be the 2-letter language code (en/tr/es/fr/de/it/pt/ru/ar/ja/ko/zh) of the language you ACTUALLY detected in the text!`;
+CRITICAL: "detectedLanguage" must be the 2-letter language code (en/tr/es/fr/de/it/pt/ru/ar/ja/ko/zh/th) of the language you ACTUALLY detected in the text. Translate to the OPPOSITE of the detected language!`;
             const userPrompt = `Available languages: ${languageNames.source} (${request.sourceLang}) ↔ ${languageNames.target} (${request.targetLang})
 Text to process: "${request.text}"
 
