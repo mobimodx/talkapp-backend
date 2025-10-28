@@ -158,6 +158,7 @@ Respond ONLY with a JSON array in this exact format:
             ja: 'Japanese',
             ko: 'Korean',
             zh: 'Chinese',
+            th: 'Thai',
         };
         return languageMap[code] || code;
     }

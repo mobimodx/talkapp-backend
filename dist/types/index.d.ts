@@ -52,7 +52,7 @@ export interface AuthResponse {
     token: string;
     refreshToken: string;
 }
-export type SupportedLanguage = 'en' | 'tr' | 'es' | 'fr' | 'de' | 'it' | 'pt' | 'ru' | 'ar' | 'ja' | 'ko' | 'zh';
+export type SupportedLanguage = 'en' | 'tr' | 'es' | 'fr' | 'de' | 'it' | 'pt' | 'ru' | 'ar' | 'ja' | 'ko' | 'zh' | 'th';
 export interface TranslationRequest {
     text: string;
     sourceLang: SupportedLanguage;

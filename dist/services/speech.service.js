@@ -125,6 +125,7 @@ class SpeechService {
             ja: 'ja-JP',
             ko: 'ko-KR',
             zh: 'zh-CN',
+            th: 'th-TH',
         };
         return languageMap[language] || 'en-US';
     }
