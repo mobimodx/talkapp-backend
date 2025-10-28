@@ -131,14 +131,7 @@ class SpeechService {
     }
     createStreamingRecognition(primaryLang, alternativeLang, interimResults = true) {
         try {
-            const languageCodes = [];
-            if (primaryLang)
-                languageCodes.push(this.getLanguageCode(primaryLang));
-            if (alternativeLang)
-                languageCodes.push(this.getLanguageCode(alternativeLang));
-            if (languageCodes.length === 0) {
-                languageCodes.push('auto');
-            }
+            const languageCodes = ['auto'];
             logger_1.default.debug('Creating streaming recognition session', {
                 primaryLanguage: primaryLang || 'auto',
                 alternativeLanguage: alternativeLang || 'none',
