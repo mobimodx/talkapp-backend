@@ -18,6 +18,7 @@ function handleStreamingConnection(ws) {
     const MAX_BUFFER_SIZE = 200;
     let bufferWarningMsgSent = false;
     let targetLang = null;
+    let sourceLang = null;
     logger_1.default.info(`Streaming WebSocket connected | sessionId: ${sessionId}`);
     const clearSilenceTimer = () => {
         if (silenceTimer) {
@@ -113,7 +114,7 @@ function handleStreamingConnection(ws) {
                                     const detectedLang = (result.languageCode?.split('-')[0] || 'auto');
                                     let translatedText;
                                     let detectedLanguage;
-                                    if (detectedLang === targetLang) {
+                                    if (detectedLang === sourceLang && sourceLang !== null) {
                                         translatedText = transcript;
                                         detectedLanguage = detectedLang;
                                         logger_1.default.debug(`Same language detected (${detectedLang}), skipping GPT translation | sessionId: ${sessionId}`);
@@ -210,6 +211,9 @@ function handleStreamingConnection(ws) {
                         }));
                         return;
                     }
+                    if (message.sourceLang) {
+                        sourceLang = message.sourceLang;
+                    }
                     if (message.targetLang) {
                         targetLang = message.targetLang;
                         logger_1.default.info(`Target language set from client | sessionId: ${sessionId}`, {
@@ -224,7 +228,7 @@ function handleStreamingConnection(ws) {
                         });
                     }
                     logger_1.default.info(`Starting streaming session | sessionId: ${sessionId}`, {
-                        sourceLang: message.sourceLang || 'auto',
+                        sourceLang: sourceLang || 'auto',
                         targetLang: targetLang || 'NOT SET',
                         interimResults: message.interimResults ?? true,
                     });
@@ -292,7 +296,7 @@ function handleStreamingConnection(ws) {
                             const detectedLang = (result.languageCode?.split('-')[0] || 'auto');
                             let translatedText;
                             let detectedLanguage;
-                            if (detectedLang === targetLang) {
+                            if (detectedLang === sourceLang && sourceLang !== null) {
                                 translatedText = transcript;
                                 detectedLanguage = detectedLang;
                                 logger_1.default.debug(`Same language detected (${detectedLang}), skipping GPT translation | sessionId: ${sessionId}`);
