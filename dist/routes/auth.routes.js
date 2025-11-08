@@ -13,5 +13,8 @@ router.post('/register', (0, validator_1.validateRequest)(validators_1.registerS
 router.post('/login', (0, validator_1.validateRequest)(validators_1.loginSchema), auth_controller_1.default.login);
 router.get('/profile', auth_1.authenticate, auth_controller_1.default.getProfile);
 router.post('/logout', auth_1.authenticate, auth_controller_1.default.logout);
+router.post('/premium/activate', auth_1.authenticate, (0, validator_1.validateRequest)(validators_1.activatePremiumSchema), auth_controller_1.default.activatePremium);
+router.post('/premium/deactivate', auth_1.authenticate, auth_controller_1.default.deactivatePremium);
+router.get('/premium/status', auth_1.authenticate, auth_controller_1.default.checkPremiumStatus);
 exports.default = router;
 //# sourceMappingURL=auth.routes.js.map

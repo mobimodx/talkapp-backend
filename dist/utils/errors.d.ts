@@ -12,6 +12,9 @@ export declare class AuthenticationError extends AppError {
 export declare class AuthorizationError extends AppError {
     constructor(message?: string);
 }
+export declare class ForbiddenError extends AppError {
+    constructor(message?: string);
+}
 export declare class NotFoundError extends AppError {
     constructor(message?: string);
 }

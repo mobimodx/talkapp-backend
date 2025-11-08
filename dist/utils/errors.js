@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ExternalServiceError = exports.RateLimitError = exports.ConflictError = exports.NotFoundError = exports.AuthorizationError = exports.AuthenticationError = exports.ValidationError = exports.AppError = void 0;
+exports.ExternalServiceError = exports.RateLimitError = exports.ConflictError = exports.NotFoundError = exports.ForbiddenError = exports.AuthorizationError = exports.AuthenticationError = exports.ValidationError = exports.AppError = void 0;
 class AppError extends Error {
     constructor(message, statusCode = 500, isOperational = true) {
         super(message);
@@ -28,6 +28,12 @@ class AuthorizationError extends AppError {
     }
 }
 exports.AuthorizationError = AuthorizationError;
+class ForbiddenError extends AppError {
+    constructor(message = 'Forbidden') {
+        super(message, 403);
+    }
+}
+exports.ForbiddenError = ForbiddenError;
 class NotFoundError extends AppError {
     constructor(message = 'Resource not found') {
         super(message, 404);

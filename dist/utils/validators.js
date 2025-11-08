@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validate = exports.teacherCompleteWordSchema = exports.teacherStartSessionSchema = exports.audioTranslationRequestSchema = exports.translationRequestSchema = exports.loginSchema = exports.registerSchema = exports.languageSchema = exports.supportedLanguages = exports.paginationSchema = void 0;
+exports.validate = exports.teacherCompleteWordSchema = exports.teacherStartSessionSchema = exports.audioTranslationRequestSchema = exports.translationRequestSchema = exports.activatePremiumSchema = exports.loginSchema = exports.registerSchema = exports.languageSchema = exports.supportedLanguages = exports.paginationSchema = void 0;
 const joi_1 = __importDefault(require("joi"));
 exports.paginationSchema = joi_1.default.object({
     page: joi_1.default.number().integer().min(1).default(1),
@@ -22,6 +22,9 @@ exports.registerSchema = joi_1.default.object({
 exports.loginSchema = joi_1.default.object({
     email: joi_1.default.string().email().required(),
     password: joi_1.default.string().required(),
+});
+exports.activatePremiumSchema = joi_1.default.object({
+    days: joi_1.default.number().integer().min(1).max(365).required(),
 });
 exports.translationRequestSchema = joi_1.default.object({
     text: joi_1.default.string().min(1).max(5000).required(),

@@ -41,6 +41,11 @@ interface Config {
         password: string;
         from: string;
     };
+    revenuecat: {
+        secretKey: string;
+        publicKey: string;
+        webhookSecret: string;
+    };
 }
 declare const config: Config;
 export default config;

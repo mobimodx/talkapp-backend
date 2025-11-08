@@ -3,10 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const user_model_1 = __importDefault(require("../models/user.model"));
 const connection_1 = require("../database/connection");
-const helpers_1 = require("../utils/helpers");
+const user_model_1 = __importDefault(require("../models/user.model"));
 const errors_1 = require("../utils/errors");
+const helpers_1 = require("../utils/helpers");
 const logger_1 = __importDefault(require("../utils/logger"));
 class AuthController {
     async register(req, res, next) {
@@ -85,6 +85,53 @@ class AuthController {
             }
             logger_1.default.info('User logged out', { userId });
             res.json((0, helpers_1.successResponse)(null, 'Logout successful'));
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    async activatePremium(req, res, next) {
+        try {
+            const userId = req.user.userId;
+            const { days } = req.body;
+            if (!days || days <= 0) {
+                throw new errors_1.ValidationError('Invalid premium duration');
+            }
+            const endDate = new Date();
+            endDate.setDate(endDate.getDate() + days);
+            const user = await user_model_1.default.updatePremium(userId, true, endDate);
+            logger_1.default.info('Premium activated', { userId, days, endDate });
+            res.json((0, helpers_1.successResponse)(user_model_1.default.toResponse(user), 'Premium activated successfully'));
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    async deactivatePremium(req, res, next) {
+        try {
+            const userId = req.user.userId;
+            const user = await user_model_1.default.updatePremium(userId, false);
+            logger_1.default.info('Premium deactivated', { userId });
+            res.json((0, helpers_1.successResponse)(user_model_1.default.toResponse(user), 'Premium deactivated successfully'));
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    async checkPremiumStatus(req, res, next) {
+        try {
+            const userId = req.user.userId;
+            const user = await user_model_1.default.findById(userId);
+            if (!user) {
+                throw new errors_1.AuthenticationError('User not found');
+            }
+            const hasActivePremium = await user_model_1.default.hasActivePremium(userId);
+            res.json((0, helpers_1.successResponse)({
+                isPremium: user.isPremium,
+                hasActivePremium,
+                premiumStartDate: user.premiumStartDate,
+                premiumEndDate: user.premiumEndDate,
+            }));
         }
         catch (error) {
             next(error);

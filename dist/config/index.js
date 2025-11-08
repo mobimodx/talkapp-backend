@@ -42,6 +42,11 @@ const config = {
         maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '10485760', 10),
         uploadPath: process.env.UPLOAD_PATH || path_1.default.join(__dirname, '../../uploads'),
     },
+    revenuecat: {
+        secretKey: process.env.REVENUECAT_SECRET_KEY || '',
+        publicKey: process.env.REVENUECAT_PUBLIC_KEY || '',
+        webhookSecret: process.env.REVENUECAT_WEBHOOK_SECRET || '',
+    },
 };
 if (process.env.SMTP_HOST) {
     config.email = {
@@ -55,8 +60,14 @@ if (process.env.SMTP_HOST) {
 if (!config.openai.apiKey && config.env !== 'test') {
     console.warn('⚠️  WARNING: OPENAI_API_KEY is not set!');
 }
+if (!config.revenuecat.secretKey && config.env !== 'test') {
+    console.warn('⚠️  WARNING: REVENUECAT_SECRET_KEY is not set!');
+}
 if (config.jwt.secret === 'your-secret-key-change-in-production' && config.env === 'production') {
     throw new Error('JWT_SECRET must be set in production!');
+}
+if (!config.revenuecat.webhookSecret && config.env === 'production') {
+    throw new Error('REVENUECAT_WEBHOOK_SECRET must be set in production!');
 }
 exports.default = config;
 //# sourceMappingURL=index.js.map

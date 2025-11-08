@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_routes_1 = __importDefault(require("./auth.routes"));
+const revenuecat_routes_1 = __importDefault(require("./revenuecat.routes"));
 const teacher_routes_1 = __importDefault(require("./teacher.routes"));
 const translation_routes_1 = __importDefault(require("./translation.routes"));
 const router = (0, express_1.Router)();
@@ -18,5 +19,6 @@ router.get('/health', (_req, res) => {
 router.use('/auth', auth_routes_1.default);
 router.use('/translation', translation_routes_1.default);
 router.use('/teacher', teacher_routes_1.default);
+router.use('/revenuecat', revenuecat_routes_1.default);
 exports.default = router;
 //# sourceMappingURL=index.js.map
