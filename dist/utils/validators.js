@@ -10,7 +10,7 @@ exports.paginationSchema = joi_1.default.object({
     limit: joi_1.default.number().integer().min(1).max(100).default(10),
 });
 exports.supportedLanguages = [
-    'en', 'tr', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ar', 'ja', 'ko', 'zh'
+    'en', 'tr', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ar', 'ja', 'ko', 'zh', 'th'
 ];
 exports.languageSchema = joi_1.default.string().valid(...exports.supportedLanguages);
 exports.registerSchema = joi_1.default.object({
